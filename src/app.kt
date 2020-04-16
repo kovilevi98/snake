@@ -12,20 +12,21 @@ import kotlin.random.Random
 
 
 fun main() {
-    var x = Example()
+    val x = Example()
     x.main()
-    /*val y=newGame()
-    y.main()*/
 }
 
 class Example : Application(), ActionListener {
     override fun actionPerformed(p0: ActionEvent?) {
+        checkWin()
         moveSnake()
         gameoverCheck()
         appleCheck()
         addToSnake()
+
     }
-    val group = Group()
+
+    private val group = Group()
     private val boardWidth = 800.0
     private val boardHeight = 600.0
     private val boardHeightwidthextra = 700.0
@@ -35,7 +36,7 @@ class Example : Application(), ActionListener {
     private var nextSnakeItemX = 0.0
     private var nextSnakeItemY = 0.0
     private var addAble = false
-    private val delay = 60
+    private val delay = 50
     private lateinit var text: Text
     private var lineList = mutableListOf<javafx.scene.shape.Line>()
     private var snakeHigh = 10
@@ -58,11 +59,19 @@ class Example : Application(), ActionListener {
         }
     }
 
+
+    private fun checkWin() {
+        if (currentPoint==1000){
+            timer.stop()
+            text.text="You won press 'r' for restart"
+        }
+    }
+
     private fun addToSnake() {
         if (addAble) {
-            snakeList.get(currentPoint).fill = Color.GREY
-            snakeList.get(currentPoint).layoutX = nextSnakeItemX
-            snakeList.get(currentPoint).layoutY = nextSnakeItemY
+            snakeList[currentPoint].fill = Color.GREY
+            snakeList[currentPoint].layoutX = nextSnakeItemX
+            snakeList[currentPoint].layoutY = nextSnakeItemY
             currentPoint++
             text.text = currentPoint.toString()
             addAble = false
@@ -79,17 +88,30 @@ class Example : Application(), ActionListener {
     }
 
     private fun createApple() {
-        actAppleX = Random.nextInt(0, boardWidth.toInt() / 10).toDouble()
-        actAppleY = Random.nextInt(0, boardHeight.toInt() / 10).toDouble()
-        apple.layoutX = (actAppleX * 10.0)
-        apple.layoutY = (actAppleY * 10.0)
+        var good=false
+        while(!good){
+            actAppleX = Random.nextInt(0, boardWidth.toInt() / 10).toDouble()
+            actAppleY = Random.nextInt(0, boardHeight.toInt() / 10).toDouble()
+            actAppleX *= 10.0
+            actAppleY *= 10.0
+            good=true
+               if(actAppleX == rec.layoutX && actAppleY == rec.layoutY)
+                   good=false
+               for (x in 0..currentPoint) {
+                   if (actAppleX == snakeList[x].layoutX && actAppleY == snakeList[x].layoutY) {
+                       good=false
+                   }
+               }
+        }
+        apple.layoutX = (actAppleX)
+        apple.layoutY = (actAppleY)
         apple.fill = Color.RED
     }
 
     private fun moveSnake() {
         if (leftDirection) {
             if (currentPoint != 0 && currentPoint != 1) {
-                for (i in 0..(currentPoint - 1)) {
+                for (i in 0 until currentPoint) {
                     snakeList[currentPoint - i].layoutX = snakeList[currentPoint - i - 1].layoutX
                     snakeList[currentPoint - i].layoutY = snakeList[currentPoint - i - 1].layoutY
                 }
@@ -103,7 +125,7 @@ class Example : Application(), ActionListener {
 
         if (rightDirection) {
             if (currentPoint != 0 && currentPoint != 1) {
-                for (i in 0..(currentPoint - 1)) {
+                for (i in 0 until currentPoint) {
                     snakeList[currentPoint - i].layoutX = snakeList[currentPoint - i - 1].layoutX
                     snakeList[currentPoint - i].layoutY = snakeList[currentPoint - i - 1].layoutY
                 }
@@ -117,7 +139,7 @@ class Example : Application(), ActionListener {
 
         if (upDirection) {
             if (currentPoint != 0 && currentPoint != 1) {
-                for (i in 0..(currentPoint - 1)) {
+                for (i in 0 until currentPoint) {
                     snakeList[currentPoint - i].layoutX = snakeList[currentPoint - i - 1].layoutX
                     snakeList[currentPoint - i].layoutY = snakeList[currentPoint - i - 1].layoutY
                 }
@@ -131,7 +153,7 @@ class Example : Application(), ActionListener {
 
         if (downDirection) {
             if (currentPoint != 0 && currentPoint != 1) {
-                for (i in 0..(currentPoint - 1)) {
+                for (i in 0 until currentPoint) {
                     snakeList[currentPoint - i].layoutX = snakeList[currentPoint - i - 1].layoutX
                     snakeList[currentPoint - i].layoutY = snakeList[currentPoint - i - 1].layoutY
                 }
@@ -154,36 +176,30 @@ class Example : Application(), ActionListener {
     }
 
     override fun start(p0: Stage?) {
-        for (x in 0..1000) {
-            val r = Rectangle(snakeWith.toDouble(), snakeHigh.toDouble())
-            r.layoutX = -100.0
-            r.layoutY = -100.0
-            r.fill = Color.WHITE
-            snakeList.add(r)
-            group.children.add(r)
-        }
-
+        rec = initRecTangle()
+        createSnakeLList()
         createApple()
+        initLines()
+        initScore()
+        val scene=initKeyListener()
         group.children.add(apple)
         if (p0 != null) {
-            p0.setTitle("Snake!")
+            p0.title = "Snake!"
             p0.isResizable = false
-        };
-
-        initLines()
-        rec = initRecTangle()
-        text = Text("0")
-        text.layoutX = 400.0
-        text.layoutY = boardHeight + 30.0
-        group.children.add(text)
-
-        lineList.forEach {
-            group.children.add(it)
         }
 
         group.children.add(rec)
-
+        lineList.forEach {
+            group.children.add(it)
+        }
         // create a scene
+        p0?.scene = scene
+        p0?.show()
+        timer = Timer(delay, this)
+        timer.start()
+    }
+
+    private fun initKeyListener() : Scene{
         val scene = Scene(group, boardWidth, boardHeightwidthextra)
         scene.setOnKeyPressed { keyEvent ->
             val key = keyEvent.code.code
@@ -211,19 +227,28 @@ class Example : Application(), ActionListener {
                 rightDirection = false
                 leftDirection = false
             }
-            //r caracter
             if (key == 82)
                 restart()
-
         }
-        // set the scene
-        p0?.setScene(scene)
+        return scene
+    }
 
-        if (p0 != null) {
-            p0.show()
-        };
-        timer = Timer(delay, this)
-        timer.start()
+    private fun initScore() {
+        text = Text("0")
+        text.layoutX = 400.0
+        text.layoutY = boardHeight + 30.0
+        group.children.add(text)
+    }
+
+    private fun createSnakeLList() {
+        for (x in 0..1000) {
+            val r = Rectangle(snakeWith.toDouble(), snakeHigh.toDouble())
+            r.layoutX = -100.0
+            r.layoutY = -100.0
+            r.fill = Color.WHITE
+            snakeList.add(r)
+            group.children.add(r)
+        }
     }
 
     private fun restart() {
@@ -240,7 +265,6 @@ class Example : Application(), ActionListener {
             snakeList.add(r)
             group.children.add(r)
         }
-        println(snakeList.size.toString())
         rec.layoutX = 50.0
         rec.layoutY = 50.0
         timer.start()
@@ -248,7 +272,7 @@ class Example : Application(), ActionListener {
 
     private fun initRecTangle(): Rectangle {
 
-        var rec = Rectangle(snakeHigh.toDouble(), snakeWith.toDouble())
+        val rec = Rectangle(snakeHigh.toDouble(), snakeWith.toDouble())
         rec.layoutX = boardHeight / 2
         rec.layoutY = boardWidth / 2
         rec.fill = Color.GREEN
@@ -264,12 +288,11 @@ class Example : Application(), ActionListener {
             val t=javafx.scene.shape.Line(x.toDouble(),0.0,x.toDouble(),boardHeight)
             lineList.add(t)
         }*/
-        val t = javafx.scene.shape.Line(0.0, boardHeight.toDouble(), boardWidth, boardHeight)
+        val t = javafx.scene.shape.Line(0.0, boardHeight, boardWidth, boardHeight)
         lineList.add(t)
     }
 
     fun main() {
-        launch();
+        launch()
     }
-
 }
